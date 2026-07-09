@@ -1,0 +1,9 @@
+/* Kept intentionally minimal — Ant Design provides almost all the styling
+   we need, so this file only resets browser defaults that would otherwise
+   fight with it (default body margin, default font). No dark-mode CSS here
+   on purpose: Ant Design's ConfigProvider is what controls theme, and we
+   haven't wired up dark mode for it yet. */
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+}
