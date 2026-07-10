@@ -6,6 +6,7 @@
 import { Authenticated } from "@refinedev/core";
 import { ThemedLayout } from "@refinedev/antd";
 import { RedirectTo } from "../../components/RedirectTo";
+import { AppSider } from "../../components/AppSider";
 
 export default function ProtectedLayout({ children }) {
   return (
@@ -15,11 +16,11 @@ export default function ProtectedLayout({ children }) {
       // whatever page they tried to reach.
       fallback={<RedirectTo to="/login" />}
     >
-      {/* Logged in -> render the page, wrapped in Refine's ready-made
-          "admin panel" shell: a sidebar (built from the `resources` list
-          in providers.js) plus a header showing the current user and a
-          logout link. */}
-      <ThemedLayout>{children}</ThemedLayout>
+      {/* Logged in -> render the page, wrapped in Refine's "admin panel"
+          shell (header showing the current user, content area), but with
+          our own AppSider instead of ThemedLayout's default sidebar — see
+          AppSider.js for why. */}
+      <ThemedLayout Sider={AppSider}>{children}</ThemedLayout>
     </Authenticated>
   );
 }

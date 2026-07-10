@@ -181,4 +181,60 @@ router.put('/:id/quotation', requireAuth, loadAccessibleLead, async (req, res) =
   res.json(result.rows[0]);
 });
 
+router.get('/:id/finance', requireAuth, loadAccessibleLead, async (req, res) => {
+  const result = await pool.query('SELECT * FROM finance_applications WHERE lead_id = $1', [req.params.id]);
+  res.json(result.rows[0] || null);
+});
+
+router.put('/:id/finance', requireAuth, loadAccessibleLead, async (req, res) => {
+  const { lender_name, loan_amount, status = 'pending', insurer_name, policy_number } = req.body;
+
+  const result = await pool.query(
+    `INSERT INTO finance_applications (lead_id, lender_name, loan_amount, status, insurer_name, policy_number)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (lead_id) DO UPDATE SET
+       lender_name = EXCLUDED.lender_name,
+       loan_amount = EXCLUDED.loan_amount,
+       status = EXCLUDED.status,
+       insurer_name = EXCLUDED.insurer_name,
+       policy_number = EXCLUDED.policy_number
+     RETURNING *`,
+    [req.params.id, lender_name || null, loan_amount || null, status, insurer_name || null, policy_number || null]
+  );
+
+  // Unlike enquiry/test-drive/quotation, this stage only advances once the
+  // loan is actually approved — a lead with a pending or rejected
+  // application hasn't really reached "financed" yet.
+  if (status === 'approved') {
+    await pool.query("UPDATE leads SET stage = 'financed' WHERE id = $1", [req.params.id]);
+  }
+
+  res.json(result.rows[0]);
+});
+
+router.get('/:id/booking', requireAuth, loadAccessibleLead, async (req, res) => {
+  const result = await pool.query('SELECT * FROM bookings WHERE lead_id = $1', [req.params.id]);
+  res.json(result.rows[0] || null);
+});
+
+router.put('/:id/booking', requireAuth, loadAccessibleLead, upload.single('kyc_doc'), async (req, res) => {
+  const { token_amount, aadhaar_verified } = req.body;
+  const kycDocUrl = req.file ? `/uploads/${req.file.filename}` : req.body.existing_kyc_doc_url || null;
+
+  const result = await pool.query(
+    `INSERT INTO bookings (lead_id, token_amount, kyc_doc_url, aadhaar_verified)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (lead_id) DO UPDATE SET
+       token_amount = EXCLUDED.token_amount,
+       kyc_doc_url = EXCLUDED.kyc_doc_url,
+       aadhaar_verified = EXCLUDED.aadhaar_verified
+     RETURNING *`,
+    [req.params.id, token_amount || null, kycDocUrl, aadhaar_verified === 'true' || aadhaar_verified === true]
+  );
+
+  await pool.query("UPDATE leads SET stage = 'booked' WHERE id = $1", [req.params.id]);
+
+  res.json(result.rows[0]);
+});
+
 module.exports = router;

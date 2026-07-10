@@ -54,3 +54,22 @@ CREATE TABLE IF NOT EXISTS quotations (
   on_road_price INTEGER,
   created_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS finance_applications (
+  id SERIAL PRIMARY KEY,
+  lead_id INTEGER UNIQUE REFERENCES leads(id),
+  lender_name TEXT,
+  loan_amount INTEGER,
+  status TEXT DEFAULT 'pending',
+  insurer_name TEXT,
+  policy_number TEXT
+);
+
+CREATE TABLE IF NOT EXISTS bookings (
+  id SERIAL PRIMARY KEY,
+  lead_id INTEGER UNIQUE REFERENCES leads(id),
+  token_amount INTEGER,
+  kyc_doc_url TEXT,
+  aadhaar_verified BOOLEAN DEFAULT false,
+  booked_at TIMESTAMP DEFAULT NOW()
+);
